@@ -1,0 +1,29 @@
+# Binary
+ghostty-configurator
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test
+*.test
+*.out
+cover.html
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Swarm/plugin state
+.hive/
+.claude
