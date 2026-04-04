@@ -14,8 +14,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/scott/ghostty-configurator/internal/api"
-	"github.com/scott/ghostty-configurator/internal/config"
+	"github.com/pwae/ghostty-configurator/internal/api"
+	"github.com/pwae/ghostty-configurator/internal/config"
 )
 
 //go:embed web/*

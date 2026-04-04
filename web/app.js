@@ -347,15 +347,15 @@ const renderTerminalPreview = (colors) => {
 
   // Fake terminal prompt lines using palette colors
   const lines = [
-    { prompt: true, color: colors.palette?.[2] || "#a6e3a1", user: "scott", dir: "~/Code", cmd: "ghostty --version" },
+    { prompt: true, color: colors.palette?.[2] || "#a6e3a1", user: "pwae", dir: "~/Code", cmd: "ghostty --version" },
     { text: "Ghostty 1.2.0", color: fg },
-    { prompt: true, color: colors.palette?.[4] || "#89b4fa", user: "scott", dir: "~/Code", cmd: "ls" },
+    { prompt: true, color: colors.palette?.[4] || "#89b4fa", user: "pwae", dir: "~/Code", cmd: "ls" },
     { parts: [
       { text: "README.md  ", color: fg },
       { text: "src/", color: colors.palette?.[4] || "#89b4fa" },
       { text: "  config.go", color: colors.palette?.[2] || "#a6e3a1" },
     ]},
-    { prompt: true, color: colors.palette?.[2] || "#a6e3a1", user: "scott", dir: "~/Code", cmd: "" },
+    { prompt: true, color: colors.palette?.[2] || "#a6e3a1", user: "pwae", dir: "~/Code", cmd: "" },
   ];
 
   for (const line of lines) {

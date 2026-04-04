@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/scott/ghostty-configurator/internal/config"
+	"github.com/pwae/ghostty-configurator/internal/config"
 )
 
 // Handler serves the Ghostty configurator API.
