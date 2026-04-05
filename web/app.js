@@ -751,6 +751,7 @@ const setupSidebar = () => {
       if (category) renderCategory(category);
     });
   });
+
 };
 
 // ---------------------------------------------------------------------------
@@ -769,6 +770,7 @@ const init = async () => {
     state.themes = themes;
 
     setupSidebar();
+    setupThemeToggle();
     renderCategory("font");
 
     const saveBtn = $("#save-btn");
@@ -779,6 +781,41 @@ const init = async () => {
     showToast(`Failed to initialize: ${err.message}`, "error");
     console.error("Init error:", err);
   }
+};
+
+// ---------------------------------------------------------------------------
+// UI Theme Toggle (light/dark)
+// ---------------------------------------------------------------------------
+const setupThemeToggle = () => {
+  const btn = $("#theme-toggle");
+  if (!btn) return;
+
+  // Restore saved preference
+  const saved = localStorage.getItem("ui-theme");
+  if (saved) {
+    document.documentElement.setAttribute("data-theme", saved);
+  }
+  updateToggleIcon(btn);
+
+  btn.addEventListener("click", () => {
+    const current = getEffectiveTheme();
+    const next = current === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem("ui-theme", next);
+    updateToggleIcon(btn);
+  });
+};
+
+const getEffectiveTheme = () => {
+  const explicit = document.documentElement.getAttribute("data-theme");
+  if (explicit) return explicit;
+  return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+};
+
+const updateToggleIcon = (btn) => {
+  const theme = getEffectiveTheme();
+  btn.textContent = theme === "dark" ? "\u2600" : "\u263E";
+  btn.title = theme === "dark" ? "Switch to light mode" : "Switch to dark mode";
 };
 
 document.addEventListener("DOMContentLoaded", init);
