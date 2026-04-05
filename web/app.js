@@ -57,7 +57,7 @@ const CATEGORIES = {
       { key: "window-width", label: "Window Width", type: "number", min: 0, desc: "Initial window width in terminal grid cells. Must be paired with window-height to take effect." },
       { key: "maximize", label: "Maximize", type: "boolean", desc: "Start new windows in maximized state instead of normal windowed mode." },
       { key: "fullscreen", label: "Fullscreen", type: "boolean", desc: "Start windows in fullscreen with options for native or non-native modes on macOS." },
-      { key: "window-save-state", label: "Save State", type: "text", desc: "Save and restore window state (position, size, tabs, splits) on exit. Values: default, never, always. macOS only." },
+      { key: "window-save-state", label: "Save State", type: "enum", options: ["default", "never", "always"], desc: "Save and restore window state (position, size, tabs, splits) on exit. macOS only." },
       { key: "window-show-tab-bar", label: "Show Tab Bar", type: "enum", options: ["auto", "always", "never"], desc: "Control tab bar visibility: always, auto (show when 2+ tabs), or never." },
     ]
   },
@@ -104,6 +104,7 @@ const state = {
   themes: [],          // ["theme1", ...]
   modifiedKeys: new Set(),
   activeCategory: "font",
+  searchQuery: "",
 };
 
 // ---------------------------------------------------------------------------
@@ -398,9 +399,194 @@ const renderTerminalPreview = (colors) => {
   return preview;
 };
 
+// Render a full-featured big preview using all palette colors
+const renderBigPreview = (colors, themeName) => {
+  const preview = document.createElement("div");
+  preview.className = "theme-big-preview";
+  const bg = colors.background || "#1e1e2e";
+  const fg = colors.foreground || "#cdd6f4";
+  const palette = colors.palette || [];
+  const p = (i, fallback) => palette[i] || fallback;
+
+  preview.style.background = bg;
+  preview.style.color = fg;
+
+  // Top bar with theme name
+  const titleBar = document.createElement("div");
+  titleBar.className = "theme-big-titlebar";
+  titleBar.textContent = themeName || "Theme Preview";
+  preview.appendChild(titleBar);
+
+  const body = document.createElement("div");
+  body.className = "theme-big-body";
+
+  const line = (fn) => {
+    const row = document.createElement("div");
+    row.className = "theme-big-line";
+    fn(row);
+    body.appendChild(row);
+  };
+
+  const span = (text, color, weight) => {
+    const s = document.createElement("span");
+    s.textContent = text;
+    if (color) s.style.color = color;
+    if (weight) s.style.fontWeight = weight;
+    return s;
+  };
+
+  const prompt = (row, cmd) => {
+    row.appendChild(span("pwae", p(2, "#a6e3a1"), "bold"));
+    row.appendChild(span("@", fg));
+    row.appendChild(span("ghost ", p(4, "#89b4fa"), "bold"));
+    row.appendChild(span("~/Code/ghostty-configurator", p(6, "#94e2d5")));
+    row.appendChild(span(" ❯ ", p(5, "#f5c2e7")));
+    if (cmd) row.appendChild(span(cmd, fg));
+  };
+
+  // Shell session
+  line((r) => prompt(r, "ghostty --version"));
+  line((r) => r.appendChild(span("Ghostty 1.2.0", fg)));
+  line((r) => {});
+  line((r) => prompt(r, "ls -la"));
+  line((r) => {
+    r.appendChild(span("drwxr-xr-x", p(3, "#f9e2af")));
+    r.appendChild(span("  6 pwae staff  192 Apr  5 12:34 ", fg));
+    r.appendChild(span(".", p(4, "#89b4fa"), "bold"));
+  });
+  line((r) => {
+    r.appendChild(span("-rw-r--r--", p(3, "#f9e2af")));
+    r.appendChild(span("  1 pwae staff  412 Apr  5 12:34 ", fg));
+    r.appendChild(span("README.md", fg));
+  });
+  line((r) => {
+    r.appendChild(span("drwxr-xr-x", p(3, "#f9e2af")));
+    r.appendChild(span("  3 pwae staff   96 Apr  5 12:34 ", fg));
+    r.appendChild(span("internal/", p(4, "#89b4fa"), "bold"));
+  });
+  line((r) => {
+    r.appendChild(span("-rwxr-xr-x", p(3, "#f9e2af")));
+    r.appendChild(span("  1 pwae staff  8.4M Apr  5 12:34 ", fg));
+    r.appendChild(span("ghostty-configurator", p(2, "#a6e3a1"), "bold"));
+  });
+  line((r) => {});
+
+  // git status example
+  line((r) => prompt(r, "git status"));
+  line((r) => r.appendChild(span("On branch ", fg)));
+  line((r) => {
+    r.appendChild(span("  ", fg));
+    r.appendChild(span("main", p(2, "#a6e3a1"), "bold"));
+  });
+  line((r) => r.appendChild(span("Changes not staged for commit:", fg)));
+  line((r) => {
+    r.appendChild(span("\tmodified:   ", p(1, "#f38ba8")));
+    r.appendChild(span("web/app.js", p(1, "#f38ba8")));
+  });
+  line((r) => {
+    r.appendChild(span("\tmodified:   ", p(1, "#f38ba8")));
+    r.appendChild(span("web/styles.css", p(1, "#f38ba8")));
+  });
+  line((r) => r.appendChild(span("Untracked files:", fg)));
+  line((r) => {
+    r.appendChild(span("\tnew-feature.go", p(1, "#f38ba8")));
+  });
+  line((r) => {});
+
+  // Log with error/warn/info
+  line((r) => prompt(r, "tail -f server.log"));
+  line((r) => {
+    r.appendChild(span("[", p(8, "#6c7086")));
+    r.appendChild(span("INFO", p(4, "#89b4fa")));
+    r.appendChild(span("] ", p(8, "#6c7086")));
+    r.appendChild(span("Server started on port 8321", fg));
+  });
+  line((r) => {
+    r.appendChild(span("[", p(8, "#6c7086")));
+    r.appendChild(span("WARN", p(3, "#f9e2af")));
+    r.appendChild(span("] ", p(8, "#6c7086")));
+    r.appendChild(span("Deprecated API endpoint called", fg));
+  });
+  line((r) => {
+    r.appendChild(span("[", p(8, "#6c7086")));
+    r.appendChild(span("ERROR", p(1, "#f38ba8")));
+    r.appendChild(span("] ", p(8, "#6c7086")));
+    r.appendChild(span("Failed to parse config line 42", fg));
+  });
+  line((r) => {
+    r.appendChild(span("[", p(8, "#6c7086")));
+    r.appendChild(span("DEBUG", p(5, "#f5c2e7")));
+    r.appendChild(span("] ", p(8, "#6c7086")));
+    r.appendChild(span("Reloaded 634 config options", fg));
+  });
+  line((r) => {});
+
+  // Cursor line
+  line((r) => {
+    prompt(r, "");
+    const cursor = document.createElement("span");
+    cursor.className = "theme-big-cursor";
+    cursor.style.background = colors.cursor || fg;
+    cursor.textContent = " ";
+    r.appendChild(cursor);
+  });
+
+  preview.appendChild(body);
+
+  // Palette swatches
+  const swatchWrap = document.createElement("div");
+  swatchWrap.className = "theme-big-swatches";
+
+  const normalLabel = document.createElement("div");
+  normalLabel.className = "theme-big-swatch-label";
+  normalLabel.textContent = "ANSI";
+  normalLabel.style.color = fg;
+  swatchWrap.appendChild(normalLabel);
+
+  const normalRow = document.createElement("div");
+  normalRow.className = "theme-big-swatch-row";
+  for (let i = 0; i < 8; i++) {
+    const sw = document.createElement("div");
+    sw.className = "theme-big-swatch";
+    sw.style.background = p(i, "#000");
+    sw.title = `palette ${i}: ${p(i, "")}`;
+    normalRow.appendChild(sw);
+  }
+  swatchWrap.appendChild(normalRow);
+
+  const brightLabel = document.createElement("div");
+  brightLabel.className = "theme-big-swatch-label";
+  brightLabel.textContent = "Bright";
+  brightLabel.style.color = fg;
+  swatchWrap.appendChild(brightLabel);
+
+  const brightRow = document.createElement("div");
+  brightRow.className = "theme-big-swatch-row";
+  for (let i = 8; i < 16; i++) {
+    const sw = document.createElement("div");
+    sw.className = "theme-big-swatch";
+    sw.style.background = p(i, "#000");
+    sw.title = `palette ${i}: ${p(i, "")}`;
+    brightRow.appendChild(sw);
+  }
+  swatchWrap.appendChild(brightRow);
+
+  preview.appendChild(swatchWrap);
+
+  return preview;
+};
+
 const renderThemeBrowser = () => {
   const wrapper = document.createElement("div");
   wrapper.className = "theme-browser";
+
+  // Sticky big preview at top
+  const stickyWrap = document.createElement("div");
+  stickyWrap.className = "theme-big-wrap";
+  const bigPreviewHost = document.createElement("div");
+  bigPreviewHost.className = "theme-big-host";
+  stickyWrap.appendChild(bigPreviewHost);
+  wrapper.appendChild(stickyWrap);
 
   const searchInput = document.createElement("input");
   searchInput.type = "text";
@@ -410,7 +596,29 @@ const renderThemeBrowser = () => {
   const grid = document.createElement("div");
   grid.className = "theme-grid";
 
-  let currentTheme = getValue("theme");
+  let currentTheme = getValue("theme") || state.themes[0] || "";
+
+  // Update the big preview with a given theme
+  const updateBigPreview = async (themeName) => {
+    if (!themeName) return;
+    // Show a loading placeholder immediately
+    bigPreviewHost.innerHTML = "";
+    const loading = document.createElement("div");
+    loading.className = "theme-big-preview theme-big-loading";
+    loading.textContent = `Loading ${themeName}...`;
+    bigPreviewHost.appendChild(loading);
+
+    const colors = await fetchThemeColors(themeName);
+    if (colors) {
+      bigPreviewHost.innerHTML = "";
+      bigPreviewHost.appendChild(renderBigPreview(colors, themeName));
+    }
+  };
+
+  // Initial load
+  if (currentTheme) {
+    updateBigPreview(currentTheme);
+  }
 
   // Lazy-load theme colors when card scrolls into view
   const observer = new IntersectionObserver((entries) => {
@@ -466,6 +674,7 @@ const renderThemeBrowser = () => {
         card.classList.add("theme-active");
         const container = wrapper.closest(".setting-item");
         if (container) container.classList.add("setting-modified");
+        updateBigPreview(theme);
       });
 
       grid.appendChild(card);
@@ -617,6 +826,11 @@ const renderCategory = (name) => {
   }
 
   content.appendChild(form);
+
+  // Re-apply search highlights after re-rendering
+  if (typeof applySearchHighlights === "function") {
+    applySearchHighlights();
+  }
 };
 
 // ---------------------------------------------------------------------------
@@ -751,7 +965,100 @@ const setupSidebar = () => {
       if (category) renderCategory(category);
     });
   });
+};
 
+// ---------------------------------------------------------------------------
+// Search
+// ---------------------------------------------------------------------------
+const settingMatchesQuery = (setting, query) => {
+  if (!query) return false;
+  const q = query.toLowerCase();
+  return (
+    setting.key.toLowerCase().includes(q) ||
+    (setting.label && setting.label.toLowerCase().includes(q)) ||
+    (setting.desc && setting.desc.toLowerCase().includes(q))
+  );
+};
+
+const findCategoriesWithMatches = (query) => {
+  const matches = new Set();
+  if (!query) return matches;
+  for (const [name, cat] of Object.entries(CATEGORIES)) {
+    if (cat.settings.some((s) => settingMatchesQuery(s, query))) {
+      matches.add(name);
+    }
+  }
+  return matches;
+};
+
+const applySearchHighlights = () => {
+  const query = state.searchQuery;
+  const matchingCategories = findCategoriesWithMatches(query);
+
+  // Highlight sidebar nav items
+  $$(".nav-item").forEach((btn) => {
+    const cat = btn.dataset.category;
+    if (query && matchingCategories.has(cat)) {
+      btn.classList.add("search-match");
+    } else {
+      btn.classList.remove("search-match");
+    }
+  });
+
+  // Highlight / filter current category's setting items
+  const items = $$(".setting-item");
+  items.forEach((item) => {
+    item.classList.remove("search-match", "search-hidden");
+    if (!query) return;
+    const key = item.dataset.key;
+    const cat = CATEGORIES[state.activeCategory];
+    if (!cat) return;
+    const setting = cat.settings.find((s) => s.key === key);
+    if (setting && settingMatchesQuery(setting, query)) {
+      item.classList.add("search-match");
+    } else {
+      item.classList.add("search-hidden");
+    }
+  });
+};
+
+const setupSearch = () => {
+  const input = $("#search-input");
+  if (!input) return;
+
+  input.addEventListener("input", () => {
+    state.searchQuery = input.value.trim();
+
+    // If typing a query and current category has no matches, jump to first matching category
+    if (state.searchQuery) {
+      const matching = findCategoriesWithMatches(state.searchQuery);
+      if (matching.size > 0 && !matching.has(state.activeCategory)) {
+        const firstMatch = [...matching][0];
+        renderCategory(firstMatch);
+        return; // renderCategory will call applySearchHighlights
+      }
+    }
+    applySearchHighlights();
+  });
+
+  // ESC clears search
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      input.value = "";
+      state.searchQuery = "";
+      applySearchHighlights();
+      input.blur();
+    }
+  });
+
+  // Cmd/Ctrl+F focuses search
+  document.addEventListener("keydown", (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === "f") {
+      e.preventDefault();
+      input.focus();
+      input.select();
+    }
+  });
 };
 
 // ---------------------------------------------------------------------------
@@ -770,6 +1077,7 @@ const init = async () => {
     state.themes = themes;
 
     setupSidebar();
+    setupSearch();
     setupThemeToggle();
     renderCategory("font");
 
